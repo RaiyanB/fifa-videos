@@ -1,0 +1,10 @@
+doctype html
+html
+  head
+    title Dashboard
+  body
+    h1 Video Dashboard
+    each video in videos
+      div
+        h3= video.title
+        iframe(width="320", height="180", src=video.url, frameborder="0", allowfullscreen)
