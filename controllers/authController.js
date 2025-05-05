@@ -2,36 +2,70 @@ const fs = require('fs');
 const path = require('path');
 const usersPath = path.join(__dirname, '../data/users.json');
 
+// Utility: Safely load users from file
+function loadUsers() {
+  try {
+    const data = fs.readFileSync(usersPath);
+    return data.length ? JSON.parse(data) : [];
+  } catch (err) {
+    console.error('Failed to read users.json:', err);
+    return [];
+  }
+}
+
+// GET /auth/register
 exports.getRegister = (req, res) => {
-  res.render('register');
+  res.render('register', { error: null });
 };
 
+// POST /auth/register
 exports.postRegister = (req, res) => {
   const { name, email, password } = req.body;
+
   if (!name || !email || !password) {
     return res.render('register', { error: 'All fields are required' });
   }
 
-  const users = JSON.parse(fs.readFileSync(usersPath));
-  if (users.find(u => u.email === email)) {
-    return res.render('register', { error: 'Email already exists' });
+  const users = loadUsers();
+  const existingUser = users.find(u => u.email.trim() === email.trim());
+
+  if (existingUser) {
+    return res.render('register', { error: 'Email already registered' });
   }
 
-  users.push({ name, email, password });
+  users.push({ name, email: email.trim(), password: password.trim() });
   fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
-  res.send('Account created. <a href="/auth/login">Login here</a>');
+
+  req.session.message = 'Account created successfully. Please log in.';
+  res.redirect('/auth/login');
 };
 
+// GET /auth/login
 exports.getLogin = (req, res) => {
-  res.render('login');
+  const message = req.session.message;
+  delete req.session.message;
+
+  res.render('login', {
+    error: null,
+    message
+  });
 };
 
+// POST /auth/login
 exports.postLogin = (req, res) => {
   const { email, password } = req.body;
-  const users = JSON.parse(fs.readFileSync(usersPath));
-  const user = users.find(u => u.email === email && u.password === password);
+
+  if (!email || !password) {
+    return res.render('login', { error: 'Please enter both email and password' });
+  }
+
+  const users = loadUsers();
+  const user = users.find(
+    u => u.email.trim() === email.trim() && u.password.trim() === password.trim()
+  );
+
   if (!user) {
-    return res.render('login', { error: 'Invalid credentials' });
+    return res.render('login', { error: 'Incorrect credentials' });
   }
 
   req.session.user = user;
