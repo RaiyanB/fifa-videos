@@ -1,0 +1,12 @@
+doctype html
+html
+  head
+    title Share New Video
+  body
+    h1 Share a New Video
+    if error
+      p(style="color:red")= error
+    form(action="/video/new" method="POST")
+      input(type="text" name="title" placeholder="Video Title" required)
+      input(type="url" name="url" placeholder="YouTube URL" required)
+      button(type="submit") Share Video
